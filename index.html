@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="心情日記">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>心情日記</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -768,7 +770,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.0.2';
+var APP_VERSION='v1.0.3';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -916,73 +918,14 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 
 function initPWA(){
-  var C=document.createElement('canvas');
-  C.width=C.height=512;
-  var ctx=C.getContext('2d');
-
-  // Rounded background
-  var rr=function(x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-    ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
-    ctx.closePath();
-  };
-
-  // Background
-  rr(0,0,512,512,108); ctx.fillStyle='#2d6a4f'; ctx.fill();
-
-  // Book body (white)
-  rr(140,108,232,296,18); ctx.fillStyle='#ffffff'; ctx.fill();
-
-  // Spine
-  ctx.fillStyle='#74a88a';
-  ctx.fillRect(140,126,38,278);
-  rr(140,108,38,296,18); ctx.fill();
-
-  // Lines
-  ctx.fillStyle='#b7ddc8';
-  rr(200,192,148,13,6); ctx.fill();
-  rr(200,228,148,13,6); ctx.fill();
-  rr(200,264,108,13,6); ctx.fill();
-
-  // Heart
-  ctx.fillStyle='#a8e8c2';
-  ctx.beginPath();
-  ctx.moveTo(256,335);
-  ctx.bezierCurveTo(256,316,232,310,232,326);
-  ctx.bezierCurveTo(232,344,256,360,256,360);
-  ctx.bezierCurveTo(256,360,280,344,280,326);
-  ctx.bezierCurveTo(280,310,256,316,256,335);
-  ctx.fill();
-
-  var url=C.toDataURL('image/png');
-
   // Apple touch icon
   var al=document.createElement('link');
-  al.rel='apple-touch-icon'; al.href=url;
+  al.rel='apple-touch-icon'; al.href='icon.svg';
   document.head.appendChild(al);
-
-  // Web manifest
-  var mf=JSON.stringify({
-    name:'心情日記', short_name:'日記',
-    start_url:'.', display:'standalone',
-    background_color:'#edf7f0', theme_color:'#2d6a4f',
-    icons:[{src:url,sizes:'512x512',type:'image/png'},{src:url,sizes:'192x192',type:'image/png'}]
-  });
-  var ml=document.createElement('link');
-  ml.rel='manifest';
-  ml.href=URL.createObjectURL(new Blob([mf],{type:'application/json'}));
-  document.head.appendChild(ml);
 
   // Service Worker
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('data:text/javascript,'+encodeURIComponent(
-      'self.addEventListener("install",function(){self.skipWaiting();});'+
-      'self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).catch(function(){return new Response("Offline");}));});'
-    )).catch(function(){});
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
   }
 }
 </script>
