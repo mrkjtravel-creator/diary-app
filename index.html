@@ -554,10 +554,10 @@ function updateStats(){
   var now=new Date();
   var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('dateDayLabel').textContent='Today';
-  document.getElementById('streakVal').textContent=DAYS[now.getDay()];
-  document.getElementById('dateMDLabel').textContent=MONTHS[now.getMonth()]+' '+now.getDate();
-  document.getElementById('monthVal').textContent=String(now.getFullYear());
+  document.getElementById('dateDayLabel').textContent=DAYS[now.getDay()];
+  document.getElementById('streakVal').textContent=now.getDate();
+  document.getElementById('dateMDLabel').textContent=String(now.getFullYear());
+  document.getElementById('monthVal').textContent=MONTHS[now.getMonth()];
 
   // sync tag
   var pending=all.filter(function(e){return !e.synced;}).length;
