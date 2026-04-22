@@ -186,6 +186,14 @@ select.fi{appearance:none;}
 .noti:focus{border-color:var(--dark);}
 .sys-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:50px;font-size:.72rem;font-weight:700;background:var(--gbg);color:var(--green);}
 .sys-badge.update{background:rgba(212,136,30,.15);color:var(--yellow);}
+/* INSTALL BANNER (home page) */
+.install-banner{margin:12px 20px 0;background:var(--dark);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.install-banner-icon{font-size:1.4rem;flex-shrink:0;}
+.install-banner-body{flex:1;}
+.install-banner-title{font-size:.88rem;font-weight:700;color:#fff;}
+.install-banner-sub{font-size:.72rem;color:rgba(255,255,255,.6);margin-top:2px;}
+.install-banner-btn{background:#fff;color:var(--dark);border:none;border-radius:20px;padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.install-banner-close{background:none;border:none;color:rgba(255,255,255,.5);font-size:1.1rem;cursor:pointer;padding:0 0 0 6px;flex-shrink:0;line-height:1;}
 /* INSTALL CARD */
 .install-card{background:var(--white);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
 .install-primary{display:block;width:100%;padding:15px 16px;background:var(--dark);border:none;border-radius:var(--r);color:#fff;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;text-align:center;margin-bottom:10px;}
@@ -236,6 +244,16 @@ select.fi{appearance:none;}
 
 <!-- PAGE: HOME -->
 <div class="page active" id="pgHome">
+  <!-- Install banner -->
+  <div class="install-banner" id="homeBanner" style="display:none;">
+    <div class="install-banner-icon">📲</div>
+    <div class="install-banner-body">
+      <div class="install-banner-title">安裝到主畫面</div>
+      <div class="install-banner-sub" id="homeBannerSub">點選右上角 ⋮ → 安裝應用程式</div>
+    </div>
+    <button class="install-banner-btn" id="homeBannerBtn" onclick="installFromBanner()">安裝</button>
+    <button class="install-banner-close" onclick="dismissBanner()">✕</button>
+  </div>
   <div class="ptop">
     <div class="ptitle">心情日記</div>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -818,7 +836,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.0.6';
+var APP_VERSION='v1.0.7';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -918,39 +936,79 @@ function pushEntry(entry,cfg){
 
 // INIT
 var _deferredPrompt = null;
+var _bannerDismissed = localStorage.getItem('banner_dismissed') === '1';
 
 window.addEventListener('beforeinstallprompt', function(e){
   e.preventDefault();
   _deferredPrompt = e;
+  // Update settings page
   document.getElementById('installAndroidPrompt').style.display = '';
   document.getElementById('installFallback').style.display = 'none';
   document.getElementById('installAndroid').style.display = 'none';
+  // Show home banner with one-click install
+  if(!_bannerDismissed){
+    var sub = document.getElementById('homeBannerSub');
+    if(sub) sub.textContent = '一鍵加入主畫面，隨時快速開啟';
+    showBanner();
+  }
 });
 
 window.addEventListener('appinstalled', function(){
   _deferredPrompt = null;
+  hideBanner();
   showInstallDone();
 });
 
+function showBanner(){
+  var b = document.getElementById('homeBanner');
+  if(b) b.style.display = 'flex';
+}
+function hideBanner(){
+  var b = document.getElementById('homeBanner');
+  if(b) b.style.display = 'none';
+}
+function dismissBanner(){
+  _bannerDismissed = true;
+  localStorage.setItem('banner_dismissed','1');
+  hideBanner();
+}
+function installFromBanner(){
+  if(_deferredPrompt){
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(r){
+      _deferredPrompt = null;
+      if(r.outcome === 'accepted'){ hideBanner(); showInstallDone(); }
+    });
+  } else {
+    // No prompt available — show manual instructions
+    goPage('pgSettings');
+    toast('請點 Chrome ⋮ 選單 → 安裝應用程式');
+  }
+}
+
 function installApp(){
-  if(!_deferredPrompt) return;
-  _deferredPrompt.prompt();
-  _deferredPrompt.userChoice.then(function(r){
-    _deferredPrompt = null;
-    if(r.outcome === 'accepted') showInstallDone();
-    else {
-      document.getElementById('installAndroidPrompt').style.display = 'none';
-      document.getElementById('installAndroid').style.display = '';
-    }
-  });
+  if(_deferredPrompt){
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(r){
+      _deferredPrompt = null;
+      if(r.outcome === 'accepted') showInstallDone();
+      else {
+        document.getElementById('installAndroidPrompt').style.display = 'none';
+        document.getElementById('installAndroid').style.display = '';
+      }
+    });
+  }
 }
 
 function showInstallDone(){
-  document.getElementById('installDone').style.display = '';
-  document.getElementById('installAndroidPrompt').style.display = 'none';
-  document.getElementById('installAndroid').style.display = 'none';
-  document.getElementById('installIos').style.display = 'none';
-  document.getElementById('installFallback').style.display = 'none';
+  ['installDone'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.style.display = '';
+  });
+  ['installAndroidPrompt','installAndroid','installIos','installFallback'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
 }
 
 function initInstallUI(){
@@ -959,17 +1017,30 @@ function initInstallUI(){
   var isAndroid = /android/i.test(ua);
   var isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-  if(isStandalone){
-    showInstallDone(); return;
-  }
+  if(isStandalone){ showInstallDone(); return; }
+
   if(isIos){
     document.getElementById('installIos').style.display = '';
     document.getElementById('installFallback').style.display = 'none';
+    // Show banner for iOS
+    if(!_bannerDismissed){
+      var sub = document.getElementById('homeBannerSub');
+      if(sub) sub.textContent = '點 Safari 分享按鈕 → 加入主畫面';
+      var btn = document.getElementById('homeBannerBtn');
+      if(btn){ btn.textContent = '查看步驟'; btn.onclick = function(){ goPage('pgSettings'); }; }
+      showBanner();
+    }
     return;
   }
   if(isAndroid){
     document.getElementById('installAndroid').style.display = '';
     document.getElementById('installFallback').style.display = 'none';
+    // Show banner for Android (manual, until beforeinstallprompt fires)
+    if(!_bannerDismissed && !_deferredPrompt){
+      var btn2 = document.getElementById('homeBannerBtn');
+      if(btn2){ btn2.textContent = '查看步驟'; btn2.onclick = function(){ goPage('pgSettings'); }; }
+      showBanner();
+    }
   }
 }
 
