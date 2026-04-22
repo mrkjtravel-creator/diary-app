@@ -1,18 +1,7 @@
-var CACHE = 'diary-v1.0.4';
-var ASSETS = [
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
-];
+var CACHE = 'diary-v1.0.5';
 
-self.addEventListener('install', function(e) {
+self.addEventListener('install', function() {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(function(c) {
-      return c.addAll(ASSETS);
-    })
-  );
 });
 
 self.addEventListener('activate', function(e) {
@@ -22,23 +11,19 @@ self.addEventListener('activate', function(e) {
         keys.filter(function(k) { return k !== CACHE; })
             .map(function(k) { return caches.delete(k); })
       );
-    }).then(function() {
-      return self.clients.claim();
-    })
+    }).then(function() { return self.clients.claim(); })
   );
 });
 
 self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(function(r) {
-      return r || fetch(e.request).then(function(res) {
-        var clone = res.clone();
-        caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
-        return res;
-      });
+    fetch(e.request).then(function(res) {
+      var clone = res.clone();
+      caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
+      return res;
     }).catch(function() {
-      return caches.match('./index.html');
+      return caches.match(e.request);
     })
   );
 });
