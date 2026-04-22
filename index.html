@@ -269,13 +269,13 @@ select.fi{appearance:none;}
       <div class="sicon">
         <svg viewBox="0 0 24 24" stroke="rgba(255,255,255,.7)" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke-width="0" fill="rgba(255,255,255,.2)"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
       </div>
-      <div><div class="slbl">連續天數</div><div class="sval" id="streakVal">0 天</div></div>
+      <div><div class="slbl" id="dateDayLabel">Today</div><div class="sval" id="streakVal">—</div></div>
     </div>
     <div class="shalf">
       <div class="sicon">
         <svg viewBox="0 0 24 24" stroke="rgba(255,255,255,.7)" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       </div>
-      <div><div class="slbl">本月筆數</div><div class="sval" id="monthVal">0 篇</div></div>
+      <div><div class="slbl" id="dateMDLabel">Date</div><div class="sval" id="monthVal">—</div></div>
     </div>
   </div>
 
@@ -549,19 +549,15 @@ function initHome(){
 
 function updateStats(){
   var all=gl(KE), today=todayKey();
-  var streak=0, d=new Date();
-  for(var i=0;i<365;i++){
-    var k=d.toISOString().split('T')[0];
-    if(all.find(function(e){return e.date===k;})) streak++;
-    else break;
-    d.setDate(d.getDate()-1);
-  }
-  document.getElementById('streakVal').textContent=streak+' 天';
 
-  // month
-  var ym=today.slice(0,7);
-  var mc=all.filter(function(e){return e.date.startsWith(ym);}).length;
-  document.getElementById('monthVal').textContent=mc+' 篇';
+  // today's date in English
+  var now=new Date();
+  var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('dateDayLabel').textContent='Today';
+  document.getElementById('streakVal').textContent=DAYS[now.getDay()];
+  document.getElementById('dateMDLabel').textContent=MONTHS[now.getMonth()]+' '+now.getDate();
+  document.getElementById('monthVal').textContent=String(now.getFullYear());
 
   // sync tag
   var pending=all.filter(function(e){return !e.synced;}).length;
