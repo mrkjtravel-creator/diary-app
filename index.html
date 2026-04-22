@@ -264,8 +264,9 @@ select.fi{appearance:none;}
     </div>
   </div>
 
-  <div class="scard" style="justify-content:center;text-align:center;">
-    <div><div class="slbl" id="dateDayLabel">—</div><div class="sval" id="streakVal">—</div></div>
+  <div class="scard" style="align-items:center;">
+    <div style="flex:1;"><div id="streakVal" style="font-family:'DM Sans',sans-serif;font-size:2rem;font-weight:800;color:#fff;line-height:1.1;">—</div></div>
+    <div style="text-align:right;"><div id="dateDayLabel" style="font-size:.85rem;color:rgba(255,255,255,.45);font-weight:500;">—</div><div id="dateYear" style="font-size:.85rem;color:rgba(255,255,255,.45);font-weight:500;">—</div></div>
   </div>
 
   <div class="shead">今天的紀錄</div>
@@ -543,8 +544,9 @@ function updateStats(){
   var now=new Date();
   var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('streakVal').textContent=now.getDate()+' '+MONTHS[now.getMonth()];
   document.getElementById('dateDayLabel').textContent=DAYS[now.getDay()];
-  document.getElementById('streakVal').textContent=now.getDate()+' '+MONTHS[now.getMonth()]+' '+now.getFullYear();
+  document.getElementById('dateYear').textContent=now.getFullYear();
 
   // sync tag
   var pending=all.filter(function(e){return !e.synced;}).length;
