@@ -1,17 +1,16 @@
-var CACHE = 'diary-v1.0.3';
+var CACHE = 'diary-v1.0.4';
 var ASSETS = [
-  './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', function(e) {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(function(c) {
       return c.addAll(ASSETS);
-    }).then(function() {
-      return self.skipWaiting();
     })
   );
 });
@@ -30,6 +29,7 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
     caches.match(e.request).then(function(r) {
       return r || fetch(e.request).then(function(res) {

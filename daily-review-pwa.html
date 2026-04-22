@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="心情日記">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>心情日記</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -770,7 +770,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.0.3';
+var APP_VERSION='v1.0.4';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -920,7 +920,7 @@ window.addEventListener('DOMContentLoaded', function(){
 function initPWA(){
   // Apple touch icon
   var al=document.createElement('link');
-  al.rel='apple-touch-icon'; al.href='icon.svg';
+  al.rel='apple-touch-icon'; al.href='icon-192.png';
   document.head.appendChild(al);
 
   // Service Worker
