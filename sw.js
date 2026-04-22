@@ -1,7 +1,11 @@
-var CACHE = 'diary-v1.0.9';
+var CACHE = 'diary-v1.1.0';
 
 self.addEventListener('install', function() {
   self.skipWaiting();
+});
+
+self.addEventListener('message', function(e) {
+  if(e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', function(e) {

@@ -836,20 +836,33 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.0.9';
+var APP_VERSION='v1.1.0';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
   var label=document.getElementById('checkUpdateLabel');
   var badge=document.getElementById('sysBadge');
   label.textContent='檢查中…';
-  setTimeout(function(){
-    // 目前為本地版本，無遠端比對；顯示已是最新
+  if(!('serviceWorker' in navigator)){
     label.textContent='檢查更新';
-    badge.textContent='最新';
-    badge.className='sys-badge';
     toast('已是最新版本 '+APP_VERSION);
-  }, 1200);
+    return;
+  }
+  navigator.serviceWorker.getRegistration().then(function(reg){
+    if(!reg){ label.textContent='檢查更新'; toast('已是最新版本 '+APP_VERSION); return; }
+    reg.update().then(function(){
+      setTimeout(function(){
+        label.textContent='檢查更新';
+        if(reg.waiting){
+          reg.waiting.postMessage({type:'SKIP_WAITING'});
+          toast('更新中，請稍候…');
+        } else {
+          badge.textContent='最新'; badge.className='sys-badge';
+          toast('已是最新版本 '+APP_VERSION);
+        }
+      },2000);
+    });
+  });
 }
 
 function openAppUrl(){
@@ -1058,7 +1071,13 @@ function initPWA(){
 
   // Service Worker
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js').catch(function(){});
+    navigator.serviceWorker.register('./sw.js').then(function(reg){
+      reg.update();
+    }).catch(function(){});
+    var _swRefreshing=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){
+      if(!_swRefreshing){ _swRefreshing=true; window.location.reload(); }
+    });
   }
 }
 </script>
