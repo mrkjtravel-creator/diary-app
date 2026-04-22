@@ -186,6 +186,21 @@ select.fi{appearance:none;}
 .noti:focus{border-color:var(--dark);}
 .sys-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:50px;font-size:.72rem;font-weight:700;background:var(--gbg);color:var(--green);}
 .sys-badge.update{background:rgba(212,136,30,.15);color:var(--yellow);}
+/* INSTALL CARD */
+.install-card{background:var(--white);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
+.install-primary{display:block;width:100%;padding:15px 16px;background:var(--dark);border:none;border-radius:var(--r);color:#fff;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;text-align:center;margin-bottom:10px;}
+.install-primary:active{opacity:.85;}
+.install-steps{padding:14px 16px;}
+.install-steps-title{font-size:.72rem;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+.install-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;}
+.install-step:last-child{margin-bottom:0;}
+.install-step-num{width:22px;height:22px;border-radius:50%;background:var(--dark);color:#fff;font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.install-step-txt{font-size:.83rem;color:var(--dark);font-weight:500;line-height:1.4;}
+.install-step-txt b{color:var(--green);}
+.install-done-row{display:flex;align-items:center;gap:12px;padding:14px 16px;}
+.install-done-icon{width:36px;height:36px;border-radius:50%;background:var(--gbg);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.install-done-txt{font-size:.88rem;font-weight:600;color:var(--dark);}
+.install-done-sub{font-size:.72rem;color:var(--g1);margin-top:2px;}
 .ach-icon-picker{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:2px;}
 .aip-btn{aspect-ratio:1;border-radius:10px;border:2px solid transparent;background:var(--g3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all .18s;}
 .aip-btn.on{border-color:var(--dark);background:var(--g2);}
@@ -347,17 +362,50 @@ select.fi{appearance:none;}
       <button class="setab" onclick="exportData()">匯出全部日記（JSON）</button>
       <button class="setab danger" onclick="clearAll()">清除全部資料</button>
     </div>
-    <div class="setsecttitle">安裝</div>
-    <div class="setcard">
-      <button class="setab install-btn" id="installBtn" onclick="installApp()" style="display:none;">
-        <span>📲 一鍵安裝到手機</span>
-      </button>
-      <div class="setrow" id="installDone" style="display:none;">
-        <div class="setrl"><div class="setrtt">已安裝</div><div class="setrsb">App 已加到主畫面</div></div>
-        <span class="sys-badge">✓</span>
+    <div class="setsecttitle">安裝到手機</div>
+    <!-- Already installed -->
+    <div class="install-card" id="installDone" style="display:none;">
+      <div class="install-done-row">
+        <div class="install-done-icon">✅</div>
+        <div><div class="install-done-txt">已安裝</div><div class="install-done-sub">App 已加到主畫面</div></div>
       </div>
-      <div class="setrow" id="installIos" style="display:none;">
-        <div class="setrl"><div class="setrtt">安裝到 iPhone</div><div class="setrsb">點 Safari 分享按鈕 → 加入主畫面</div></div>
+    </div>
+    <!-- Android: beforeinstallprompt available -->
+    <div id="installAndroidPrompt" style="display:none;">
+      <button class="install-primary" onclick="installApp()">📲 安裝到主畫面</button>
+    </div>
+    <!-- Android manual steps -->
+    <div class="install-card" id="installAndroid" style="display:none;">
+      <div class="install-steps">
+        <div class="install-steps-title">Android Chrome 安裝步驟</div>
+        <div class="install-step"><div class="install-step-num">1</div><div class="install-step-txt">用 <b>Chrome</b> 瀏覽器開啟此網址</div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div class="install-step-txt">點右上角 <b>⋮ 三點選單</b></div></div>
+        <div class="install-step"><div class="install-step-num">3</div><div class="install-step-txt">點選 <b>「新增至主畫面」</b>或<b>「安裝應用程式」</b></div></div>
+        <div class="install-step"><div class="install-step-num">4</div><div class="install-step-txt">點 <b>「新增」</b> 確認安裝</div></div>
+      </div>
+    </div>
+    <!-- iOS steps -->
+    <div class="install-card" id="installIos" style="display:none;">
+      <div class="install-steps">
+        <div class="install-steps-title">iPhone / iPad 安裝步驟</div>
+        <div class="install-step"><div class="install-step-num">1</div><div class="install-step-txt">用 <b>Safari</b> 開啟此網址</div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div class="install-step-txt">點下方工具列的 <b>分享按鈕 □↑</b></div></div>
+        <div class="install-step"><div class="install-step-num">3</div><div class="install-step-txt">向下滑找到 <b>「加入主畫面」</b> 並點選</div></div>
+        <div class="install-step"><div class="install-step-num">4</div><div class="install-step-txt">點右上角 <b>「新增」</b> 完成安裝</div></div>
+      </div>
+    </div>
+    <!-- Fallback: show both -->
+    <div class="install-card" id="installFallback">
+      <div class="install-steps">
+        <div class="install-steps-title">Android Chrome</div>
+        <div class="install-step"><div class="install-step-num">1</div><div class="install-step-txt">點右上角 <b>⋮ 三點選單</b></div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div class="install-step-txt">點 <b>「新增至主畫面」</b></div></div>
+      </div>
+      <div style="height:1px;background:#d4ecd4;margin:0 16px;"></div>
+      <div class="install-steps">
+        <div class="install-steps-title">iPhone Safari</div>
+        <div class="install-step"><div class="install-step-num">1</div><div class="install-step-txt">點下方 <b>分享按鈕 □↑</b></div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div class="install-step-txt">點 <b>「加入主畫面」</b></div></div>
       </div>
     </div>
     <div class="setsecttitle">系統</div>
@@ -770,7 +818,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.0.5';
+var APP_VERSION='v1.0.6';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -870,51 +918,65 @@ function pushEntry(entry,cfg){
 
 // INIT
 var _deferredPrompt = null;
+
 window.addEventListener('beforeinstallprompt', function(e){
   e.preventDefault();
   _deferredPrompt = e;
-  var btn = document.getElementById('installBtn');
-  if(btn) btn.style.display = '';
+  document.getElementById('installAndroidPrompt').style.display = '';
+  document.getElementById('installFallback').style.display = 'none';
+  document.getElementById('installAndroid').style.display = 'none';
 });
+
 window.addEventListener('appinstalled', function(){
   _deferredPrompt = null;
-  var btn = document.getElementById('installBtn');
-  var done = document.getElementById('installDone');
-  if(btn) btn.style.display = 'none';
-  if(done) done.style.display = '';
+  showInstallDone();
 });
 
 function installApp(){
-  if(_deferredPrompt){
-    _deferredPrompt.prompt();
-    _deferredPrompt.userChoice.then(function(r){
-      _deferredPrompt = null;
-      if(r.outcome === 'accepted'){
-        var btn = document.getElementById('installBtn');
-        var done = document.getElementById('installDone');
-        if(btn) btn.style.display = 'none';
-        if(done) done.style.display = '';
-      }
-    });
-  } else {
-    toast('請用 Safari 開啟，再點分享→加入主畫面');
+  if(!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  _deferredPrompt.userChoice.then(function(r){
+    _deferredPrompt = null;
+    if(r.outcome === 'accepted') showInstallDone();
+    else {
+      document.getElementById('installAndroidPrompt').style.display = 'none';
+      document.getElementById('installAndroid').style.display = '';
+    }
+  });
+}
+
+function showInstallDone(){
+  document.getElementById('installDone').style.display = '';
+  document.getElementById('installAndroidPrompt').style.display = 'none';
+  document.getElementById('installAndroid').style.display = 'none';
+  document.getElementById('installIos').style.display = 'none';
+  document.getElementById('installFallback').style.display = 'none';
+}
+
+function initInstallUI(){
+  var ua = navigator.userAgent;
+  var isIos = /iphone|ipad|ipod/i.test(ua);
+  var isAndroid = /android/i.test(ua);
+  var isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  if(isStandalone){
+    showInstallDone(); return;
+  }
+  if(isIos){
+    document.getElementById('installIos').style.display = '';
+    document.getElementById('installFallback').style.display = 'none';
+    return;
+  }
+  if(isAndroid){
+    document.getElementById('installAndroid').style.display = '';
+    document.getElementById('installFallback').style.display = 'none';
   }
 }
 
 window.addEventListener('DOMContentLoaded', function(){
   initHome();
   initPWA();
-  // Detect iOS for install hint
-  var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
-  if(isIos){
-    var el = document.getElementById('installIos');
-    if(el) el.style.display = '';
-  }
-  // If already installed
-  if(window.navigator.standalone){
-    var done = document.getElementById('installDone');
-    if(done) done.style.display = '';
-  }
+  initInstallUI();
 });
 
 function initPWA(){
