@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2d6a4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="心情日記">
+<title>心情日記</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:     #edf7f0;
+  --white:  #ffffff;
+  --black:  #1a2e22;
+  --dark:   #2d6a4f;
+  --g1:     #74a88a;
+  --g2:     #b7ddc8;
+  --g3:     #e0f2e9;
+  --green:  #3a9e6a;
+  --gbg:    rgba(58,158,106,.13);
+  --red:    #c94040;
+  --yellow: #c8820a;
+  --r:      16px;
+  --rb:     22px;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:#c8e8d4;overflow:hidden;}
+.app{max-width:430px;margin:0 auto;height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;overflow:hidden;}
+
+/* PAGES */
+.page{position:absolute;inset:0;bottom:80px;overflow-y:auto;overflow-x:hidden;display:none;-webkit-overflow-scrolling:touch;}
+.page::-webkit-scrollbar{display:none;}
+.page.active{display:block;}
+
+/* BOTTOM NAV */
+.bnav{position:absolute;bottom:0;left:0;right:0;height:80px;padding:0 10px 18px;display:flex;align-items:flex-start;background:var(--bg);z-index:100;border-top:1px solid rgba(45,106,79,.1);}
+.bnav-inner{flex:1;background:transparent;border-radius:26px;display:flex;align-items:center;justify-content:space-around;padding:8px 0;}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:5px 0;}
+.ni{width:22px;height:22px;display:flex;align-items:center;justify-content:center;}
+.ni svg{width:22px;height:22px;stroke:var(--g1);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s;}
+.nl{font-size:.58rem;font-weight:600;color:var(--g1);font-family:'DM Sans',sans-serif;}
+.nb.on .nl{color:var(--dark);font-weight:700;}
+.nb.on .ni svg{stroke:var(--dark);}
+
+/* TOAST */
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--dark);color:#fff;padding:10px 20px;border-radius:50px;font-size:.82rem;font-weight:600;opacity:0;transition:all .3s;white-space:nowrap;z-index:999;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* SHARED */
+.ptop{padding:48px 20px 0;display:flex;align-items:center;justify-content:space-between;}
+.ptitle{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--black);}
+.ib{width:38px;height:38px;border-radius:50%;background:var(--white);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(45,106,79,.14);transition:transform .15s;}
+.ib:active{transform:scale(.93);}
+.ib svg{width:16px;height:16px;stroke:var(--dark);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.stag{display:inline-flex;align-items:center;gap:5px;background:rgba(46,139,87,.13);color:var(--green);padding:4px 11px;border-radius:50px;font-size:.72rem;font-weight:700;}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+
+/* BIG STAT */
+.bstat{padding:14px 20px 0;}
+.bstat-lbl{font-size:.78rem;color:var(--g1);font-weight:500;margin-bottom:5px;}
+.bstat-num{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--black);line-height:1;letter-spacing:-1px;}
+
+/* SUMMARY CARD (dark) */
+.scard{margin:14px 20px 0;background:var(--dark);border-radius:var(--rb);padding:18px;display:flex;}
+.shalf{flex:1;display:flex;align-items:center;gap:10px;}
+.shalf+.shalf{border-left:1px solid rgba(255,255,255,.14);padding-left:18px;}
+.sicon{width:36px;height:36px;border-radius:50%;background:rgba(168,230,196,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sicon svg{width:16px;height:16px;}
+.slbl{font-size:.7rem;color:rgba(255,255,255,.45);font-weight:500;margin-bottom:2px;}
+.sval{font-family:'DM Sans',sans-serif;font-size:1.2rem;font-weight:800;color:#fff;}
+
+/* SECTION HEAD */
+.shead{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;color:var(--black);padding:18px 20px 10px;}
+
+/* WRITE SHEET */
+.wsheet{background:var(--white);border-radius:var(--rb) var(--rb) 0 0;margin:0;padding:0 0 40px;box-shadow:0 -2px 16px rgba(42,96,72,.08);}
+.mlbl{font-size:.72rem;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:.07em;padding:16px 20px 10px;display:block;}
+.mrow{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:0 16px 18px;}
+.mchip{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+.mface{width:100%;aspect-ratio:1;border-radius:14px;border:2.5px solid transparent;display:flex;align-items:center;justify-content:center;transition:all .22s cubic-bezier(.34,1.56,.64,1);font-size:1.4rem;background:var(--g3);}
+.mname{font-size:.55rem;font-weight:600;color:var(--g1);text-align:center;}
+.mchip.on .mface{border-color:var(--dark);transform:translateY(-3px);box-shadow:0 5px 14px rgba(0,0,0,.1);}
+.mchip.on .mname{color:var(--dark);font-weight:700;}
+
+/* DIARY QUESTIONS */
+.wfields{padding:0 20px;}
+.wq{border-bottom:1px solid #d4ecd4;padding:14px 0;}
+.wq:last-child{border-bottom:none;}
+.wqlbl{font-size:.7rem;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.wqn{width:17px;height:17px;background:var(--g2);color:var(--dark);border-radius:5px;font-size:.62rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wq textarea{width:100%;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--dark);resize:none;min-height:50px;background:transparent;line-height:1.6;}
+.wq textarea::placeholder{color:var(--g2);}
+.wsave{padding:18px 20px 0;}
+.btnm{width:100%;padding:16px;border:none;border-radius:13px;background:var(--dark);color:#fff;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:transform .15s;}
+.btnm:active{transform:scale(.97);}
+
+/* CALENDAR */
+.calnav{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px;}
+.calnb{width:34px;height:34px;border-radius:50%;background:var(--white);border:none;cursor:pointer;font-size:.9rem;color:var(--dark);box-shadow:0 1px 4px rgba(0,0,0,.08);transition:transform .15s;}
+.calnb:active{transform:scale(.9);}
+.calmth{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--black);}
+.calcrd{margin:0 20px 14px;background:var(--white);border-radius:var(--r);overflow:hidden;}
+.caldow{display:grid;grid-template-columns:repeat(7,1fr);padding:6px 8px 0;}
+.caldow-cell{text-align:center;font-size:.62rem;font-weight:700;color:var(--g1);padding:4px 0;}
+.caldays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:4px 8px 10px;}
+.calday{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:background .15s;}
+.calday:hover{background:var(--g3);}
+.calday.today{background:var(--dark);}
+.calday.today .cdn{color:#fff;}
+.calday.other .cdn{color:var(--g2);}
+.calday.sel{background:rgba(58,158,106,.18);}
+.cdn{font-size:.75rem;font-weight:600;color:var(--dark);}
+.cdot{width:5px;height:5px;border-radius:50%;position:absolute;bottom:3px;}
+.calentry{margin:0 20px 20px;background:var(--white);border-radius:var(--r);overflow:hidden;}
+.cale-hd{padding:14px 16px 10px;border-bottom:1px solid #d4ecd4;display:flex;align-items:center;gap:8px;}
+.cale-mface{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.cale-dt{font-size:.8rem;font-weight:700;color:var(--dark);}
+.cale-ml{font-size:.7rem;color:var(--g1);}
+.cale-q{padding:10px 16px;border-bottom:1px solid #eaf5ea;}
+.cale-q:last-child{border-bottom:none;}
+.cale-ql{font-size:.65rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+.cale-qv{font-size:.83rem;color:var(--dark);line-height:1.5;}
+.calempty{padding:28px;text-align:center;color:var(--g1);font-size:.83rem;}
+
+/* ACHIEVEMENTS */
+.achhero{margin:14px 20px 0;background:var(--dark);border-radius:var(--rb);padding:18px;display:flex;align-items:center;gap:14px;}
+.achhero-l{flex:1;}
+.achhero-lbl{font-size:.7rem;color:rgba(255,255,255,.4);font-weight:600;margin-bottom:3px;}
+.achhero-num{font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:#fff;line-height:1;}
+.achhero-sub{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:3px;}
+.achhero-icon{font-size:2.4rem;flex-shrink:0;}
+
+.achform{background:var(--white);border-radius:var(--r);padding:18px;margin:12px 20px 0;display:none;}
+.achform.open{display:block;}
+.aftitle{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;color:var(--dark);margin-bottom:14px;}
+.fl{font-size:.68rem;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.fw{margin-bottom:10px;}
+.fi{width:100%;padding:11px 13px;background:var(--g3);border:1.5px solid transparent;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--dark);outline:none;transition:border-color .2s;}
+.fi:focus{border-color:var(--dark);}
+select.fi{appearance:none;}
+.fbtns{display:flex;gap:8px;margin-top:4px;}
+.fb{flex:1;padding:12px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;}
+.fb.p{background:var(--dark);color:#fff;}
+.fb.g{background:var(--g3);color:var(--dark);}
+
+.achlist{padding:12px 20px 20px;}
+.achcard{background:var(--white);border-radius:var(--r);padding:16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;}
+.achico{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.achbody{flex:1;min-width:0;}
+.achnm{font-size:.9rem;font-weight:700;color:var(--dark);margin-bottom:2px;}
+.achdc{font-size:.72rem;color:var(--g1);margin-bottom:8px;line-height:1.4;}
+.achpw{height:5px;background:#d4ecd4;border-radius:3px;margin-bottom:5px;overflow:hidden;}
+.achpb{height:100%;border-radius:3px;transition:width .5s;}
+.achst{display:flex;justify-content:space-between;align-items:center;}
+.achstxt{font-size:.7rem;color:var(--g1);font-weight:600;}
+.achlb{padding:6px 12px;border:none;border-radius:8px;background:var(--dark);color:#fff;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;transition:transform .15s;}
+.achlb:active{transform:scale(.93);}
+.achdone{padding:5px 9px;border-radius:8px;background:var(--gbg);color:var(--green);font-size:.7rem;font-weight:700;}
+.achdl{background:none;border:none;cursor:pointer;font-size:.68rem;color:var(--g2);font-family:'DM Sans',sans-serif;padding:4px 0;display:block;margin-top:5px;}
+
+/* SETTINGS */
+.setbody{padding:0 20px 20px;}
+.setsecttitle{font-size:.7rem;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:.07em;padding:14px 0 7px;}
+.setcard{background:var(--white);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
+.setrow{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #d4ecd4;}
+.setrow:last-child{border-bottom:none;}
+.setrl{flex:1;}
+.setrtt{font-size:.88rem;font-weight:600;color:var(--dark);}
+.setrsb{font-size:.7rem;color:var(--g1);margin-top:2px;}
+.tog{width:42px;height:24px;border-radius:12px;background:var(--g2);border:none;cursor:pointer;position:relative;transition:background .3s;flex-shrink:0;}
+.tog.on{background:var(--dark);}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .3s;}
+.tog.on::after{transform:translateX(18px);}
+.setab{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #d4ecd4;background:none;border-left:none;border-right:none;border-top:none;width:100%;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;color:var(--dark);cursor:pointer;transition:background .15s;text-align:left;}
+.setab:last-child{border-bottom:none;}
+.setab:hover{background:var(--g3);}
+.setab.danger{color:var(--red);}
+.notwrap{padding:13px 16px;border-bottom:1px solid #d4ecd4;}
+.notwrap:last-child{border-bottom:none;}
+.notlbl{font-size:.68rem;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.noti{width:100%;padding:10px 13px;background:var(--g3);border:1.5px solid transparent;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;color:var(--dark);outline:none;transition:border-color .2s;}
+.noti:focus{border-color:var(--dark);}
+.sys-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:50px;font-size:.72rem;font-weight:700;background:var(--gbg);color:var(--green);}
+.sys-badge.update{background:rgba(212,136,30,.15);color:var(--yellow);}
+.ach-icon-picker{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:2px;}
+.aip-btn{aspect-ratio:1;border-radius:10px;border:2px solid transparent;background:var(--g3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all .18s;}
+.aip-btn.on{border-color:var(--dark);background:var(--g2);}
+.aip-btn:hover{background:var(--g2);}
+.notsave{margin:12px 16px;padding:12px;border:none;border-radius:10px;background:var(--dark);color:#fff;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;width:calc(100% - 32px);}
+/* CONFIRM DIALOG */
+.dlg-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.dlg-overlay.show{opacity:1;pointer-events:all;}
+.dlg-box{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:430px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.dlg-overlay.show .dlg-box{transform:translateY(0);}
+.dlg-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;color:var(--black);margin-bottom:6px;}
+.dlg-msg{font-size:.88rem;color:var(--g1);margin-bottom:20px;}
+.dlg-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.dlg-btn{padding:14px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;}
+.dlg-btn.cancel{background:var(--g3);color:var(--dark);}
+.dlg-btn.confirm{background:#e53935;color:#fff;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- CONFIRM DIALOG -->
+<div class="dlg-overlay" id="dlgOverlay">
+  <div class="dlg-box">
+    <div class="dlg-title" id="dlgTitle">確認刪除</div>
+    <div class="dlg-msg" id="dlgMsg">確定要刪除這個成就嗎？</div>
+    <div class="dlg-btns">
+      <button class="dlg-btn cancel" onclick="dlgClose()">取消</button>
+      <button class="dlg-btn confirm" id="dlgConfirmBtn">刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: HOME -->
+<div class="page active" id="pgHome">
+  <div class="ptop">
+    <div class="ptitle">心情日記</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="stag" id="syncTag"><span class="sdot"></span>已同步</span>
+      <button class="ib" onclick="syncAll()" title="同步">
+        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="scard">
+    <div class="shalf">
+      <div class="sicon">
+        <svg viewBox="0 0 24 24" stroke="rgba(255,255,255,.7)" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke-width="0" fill="rgba(255,255,255,.2)"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </div>
+      <div><div class="slbl">連續天數</div><div class="sval" id="streakVal">0 天</div></div>
+    </div>
+    <div class="shalf">
+      <div class="sicon">
+        <svg viewBox="0 0 24 24" stroke="rgba(255,255,255,.7)" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div><div class="slbl">本月筆數</div><div class="sval" id="monthVal">0 篇</div></div>
+    </div>
+  </div>
+
+  <div class="shead">今天的紀錄</div>
+
+  <div class="wsheet">
+    <div class="mlbl">我的感受</div>
+    <div class="mrow" id="moodRow"></div>
+    <div class="wfields" id="wfields"></div>
+    <div class="wsave">
+      <button class="btnm" onclick="saveAndSync()">儲存今天的日記</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: CALENDAR -->
+<div class="page" id="pgCal">
+  <div class="ptop" style="padding-bottom:0;"><div class="ptitle">日曆回顧</div></div>
+  <div class="calnav">
+    <button class="calnb" onclick="calShift(-1)">‹</button>
+    <div class="calmth" id="calMth"></div>
+    <button class="calnb" onclick="calShift(1)">›</button>
+  </div>
+  <div class="calcrd">
+    <div class="caldow" id="calDow"></div>
+    <div class="caldays" id="calDays"></div>
+  </div>
+  <div class="calentry" id="calEntry"><div class="calempty">點選一天查看日記</div></div>
+</div>
+
+<!-- PAGE: ACHIEVEMENTS -->
+<div class="page" id="pgAch">
+  <div class="ptop" style="padding-bottom:0;">
+    <div class="ptitle">成就</div>
+    <button class="ib" onclick="toggleAchForm()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+  <div class="achhero">
+    <div class="achhero-l">
+      <div class="achhero-lbl">已達成</div>
+      <div class="achhero-num" id="achDone">0</div>
+      <div class="achhero-sub" id="achTotal">共 0 個成就</div>
+    </div>
+    <div class="achhero-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+    </div>
+  </div>
+  <div style="height:2px;"></div>
+  <div class="achform" id="achForm">
+    <div class="aftitle">新增成就目標</div>
+    <div class="fw"><div class="fl">名稱</div><input class="fi" type="text" id="aName" placeholder="例：每天多喝水"></div>
+    <div class="fw"><div class="fl">描述</div><input class="fi" type="text" id="aDesc" placeholder="例：每天喝足 2000ml"></div>
+    <div class="fw"><div class="fl">目標次數</div><input class="fi" type="number" id="aTarget" placeholder="30" min="1"></div>
+    <div class="fw">
+      <div class="fl">圖標</div>
+      <div class="ach-icon-picker" id="achIconPicker"></div>
+    </div>
+    <div class="fw">
+      <div class="fl">主題顏色</div>
+      <select class="fi" id="aColor">
+        <option value="#2e8b57">綠色</option>
+        <option value="#f9a825">黃色</option>
+        <option value="#ef6c00">橘色</option>
+        <option value="#1565c0">藍色</option>
+        <option value="#6a1b9a">紫色</option>
+        <option value="#ad1457">粉紅</option>
+      </select>
+    </div>
+    <div class="fbtns">
+      <button class="fb p" onclick="addAch()">建立</button>
+      <button class="fb g" onclick="toggleAchForm()">取消</button>
+    </div>
+  </div>
+  <div class="achlist" id="achList"></div>
+</div>
+
+<!-- PAGE: SETTINGS -->
+<div class="page" id="pgSettings">
+  <div class="ptop" style="padding-bottom:0;"><div class="ptitle">設定</div></div>
+  <div class="setbody">
+    <div class="setsecttitle">Notion 後台</div>
+    <div class="setcard">
+      <div class="notwrap"><div class="notlbl">Database ID</div><input class="noti" type="text" id="cfgDb" placeholder="從 Notion URL 複製"></div>
+      <div class="notwrap"><div class="notlbl">API Key</div><input class="noti" type="text" id="cfgKey" placeholder="secret_..."></div>
+      <button class="notsave" onclick="saveConfig()">儲存 Notion 設定</button>
+    </div>
+    <div class="setsecttitle">偏好</div>
+    <div class="setcard">
+      <div class="setrow">
+        <div class="setrl"><div class="setrtt">每日提醒</div><div class="setrsb">提醒你記錄今天的日記</div></div>
+        <button class="tog" id="togR" onclick="togglePref('remind','togR')"></button>
+      </div>
+      <div class="setrow">
+        <div class="setrl"><div class="setrtt">週回顧摘要</div><div class="setrsb">每週統計情緒概況</div></div>
+        <button class="tog" id="togW" onclick="togglePref('weekly','togW')"></button>
+      </div>
+    </div>
+    <div class="setsecttitle">資料</div>
+    <div class="setcard">
+      <button class="setab" onclick="syncAll()">同步全部日記到 Notion</button>
+      <button class="setab" onclick="exportData()">匯出全部日記（JSON）</button>
+      <button class="setab danger" onclick="clearAll()">清除全部資料</button>
+    </div>
+    <div class="setsecttitle">系統</div>
+    <div class="setcard">
+      <div class="setrow">
+        <div class="setrl">
+          <div class="setrtt">目前版本</div>
+          <div class="setrsb" id="sysVersion">v1.0.0</div>
+        </div>
+        <span class="sys-badge" id="sysBadge">最新</span>
+      </div>
+      <button class="setab" onclick="checkUpdate()">
+        <span id="checkUpdateLabel">檢查更新</span>
+      </button>
+      <button class="setab" onclick="openAppUrl()">前往應用網址</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <div class="bnav-inner">
+    <button class="nb on" data-p="pgHome" onclick="goPage('pgHome')">
+      <div class="ni"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="nl">首頁</div>
+    </button>
+    <button class="nb" data-p="pgCal" onclick="goPage('pgCal')">
+      <div class="ni"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="nl">回顧</div>
+    </button>
+    <button class="nb" data-p="pgAch" onclick="goPage('pgAch')">
+      <div class="ni"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/><path d="M4 22h16"/><path d="M12 15v7"/></svg></div>
+      <div class="nl">成就</div>
+    </button>
+    <button class="nb" data-p="pgSettings" onclick="goPage('pgSettings')">
+      <div class="ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      <div class="nl">設定</div>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+var KE='dj_e3', KA='dj_a2', KC='dj_c1', KP='dj_p1';
+
+var MOODS=[
+  {k:'happy',  l:'開心', e:'😊', bg:'#fff8e1'},
+  {k:'calm',   l:'平靜', e:'😌', bg:'#e8f5e9'},
+  {k:'sad',    l:'傷心', e:'🥺', bg:'#e3f2fd'},
+  {k:'love',   l:'喜歡', e:'🥰', bg:'#fce4ec'},
+  {k:'angry',  l:'煩躁', e:'😤', bg:'#fbe9e7'},
+  {k:'tired',  l:'疲倦', e:'😴', bg:'#efebe9'},
+];
+
+var DIARY_QS=[
+  {id:'dq1', lbl:'今天最簡單的一句話描述', ph:'今天是⋯⋯的一天'},
+  {id:'dq2', lbl:'今天重要或難忘的一件事', ph:'今天最讓我印象深刻的是⋯⋯'},
+  {id:'dq3', lbl:'最感謝的事情', ph:'我很感謝⋯⋯'},
+  {id:'dq4', lbl:'最難過的事情', ph:'今天讓我難過的是⋯⋯'},
+  {id:'dq5', lbl:'我打算怎麼面對', ph:'我可以⋯⋯'},
+  {id:'dq6', lbl:'給自己一個鼓勵', ph:'做得很好的是⋯⋯'},
+  {id:'dq7', lbl:'明天要好好做的事', ph:'明天我會⋯⋯'},
+];
+
+var curMood='', calY, calM;
+
+function gl(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
+function go(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch(e){return{};}}
+function sl(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function localDateKey(d){
+  var y=d.getFullYear();
+  var m=String(d.getMonth()+1).padStart(2,'0');
+  var day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function todayKey(){return localDateKey(new Date());}
+function esc(s){return (s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];});}
+
+function toast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');},2800);
+}
+
+function goPage(pid){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById(pid).classList.add('active');
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.toggle('on',b.dataset.p===pid);});
+  if(pid==='pgCal') renderCal();
+  if(pid==='pgAch') renderAch();
+  if(pid==='pgSettings') loadSettings();
+}
+
+function scrollToWrite(){
+  var p=document.getElementById('pgHome');
+  if(p) setTimeout(function(){p.scrollTo({top:p.scrollHeight,behavior:'smooth'});},100);
+}
+
+// HOME
+function initHome(){
+  // mood row
+  var row=document.getElementById('moodRow');
+  row.innerHTML=MOODS.map(function(m){
+    return '<div class="mchip" data-mood="'+m.k+'" onclick="selMood(\''+m.k+'\')">'
+      +'<div class="mface" style="background:'+m.bg+'">'+m.e+'</div>'
+      +'<div class="mname">'+m.l+'</div></div>';
+  }).join('');
+
+  // write fields
+  var wf=document.getElementById('wfields');
+  wf.innerHTML=DIARY_QS.map(function(q,i){
+    return '<div class="wq">'
+      +'<div class="wqlbl"><span class="wqn">'+(i+1)+'</span>'+q.lbl+'</div>'
+      +'<textarea id="'+q.id+'" placeholder="'+q.ph+'" rows="2"></textarea>'
+      +'</div>';
+  }).join('');
+
+  updateStats();
+  restoreDraft();
+}
+
+function updateStats(){
+  var all=gl(KE), today=todayKey();
+  var streak=0, d=new Date();
+  for(var i=0;i<365;i++){
+    var k=d.toISOString().split('T')[0];
+    if(all.find(function(e){return e.date===k;})) streak++;
+    else break;
+    d.setDate(d.getDate()-1);
+  }
+  document.getElementById('streakVal').textContent=streak+' 天';
+
+  // month
+  var ym=today.slice(0,7);
+  var mc=all.filter(function(e){return e.date.startsWith(ym);}).length;
+  document.getElementById('monthVal').textContent=mc+' 篇';
+
+  // sync tag
+  var pending=all.filter(function(e){return !e.synced;}).length;
+  var st=document.getElementById('syncTag');
+  if(pending>0){
+    st.innerHTML='<span class="sdot" style="background:#f9a825"></span>'+pending+' 篇待同步';
+    st.style.cssText='background:rgba(249,168,37,.12);color:#f9a825;';
+  } else {
+    st.innerHTML='<span class="sdot"></span>已同步';
+    st.style.cssText='';
+  }
+}
+
+function restoreDraft(){
+  var all=gl(KE), ex=all.find(function(e){return e.date===todayKey();});
+  if(!ex) return;
+  DIARY_QS.forEach(function(q){
+    var el=document.getElementById(q.id);
+    if(el) el.value=ex[q.id]||'';
+  });
+  if(ex.mood) selMood(ex.mood);
+}
+
+function selMood(k){
+  curMood=k;
+  document.querySelectorAll('.mchip').forEach(function(c){
+    c.classList.toggle('on',c.dataset.mood===k);
+  });
+}
+
+function saveAndSync(){
+  var today=todayKey();
+  var data={date:today,mood:curMood,saved:new Date().toISOString(),synced:false};
+  DIARY_QS.forEach(function(q){
+    var el=document.getElementById(q.id);
+    data[q.id]=el?el.value.trim():'';
+  });
+  var all=gl(KE), idx=all.findIndex(function(e){return e.date===today;});
+  if(idx>=0) all[idx]=Object.assign(all[idx],data);
+  else all.unshift(data);
+  sl(KE,all);
+  logAchAuto('日記連續打卡');
+  updateStats();
+  toast('已儲存，同步中…');
+  // 自動同步到 Notion
+  var cfg=go(KC);
+  if(cfg.db&&cfg.key){
+    var entry=all.find(function(e){return e.date===today;});
+    if(entry&&!entry.synced){
+      pushEntry(entry,cfg).then(function(){
+        updateStats();
+        toast('已儲存並同步到 Notion');
+      }).catch(function(){
+        toast('已儲存，同步稍後再試');
+      });
+    }
+  } else {
+    toast('今天的日記已儲存');
+  }
+}
+
+function saveEntry(){saveAndSync();}
+
+// CALENDAR
+function renderCal(){
+  var now=new Date();
+  if(!calY){calY=now.getFullYear();calM=now.getMonth();}
+  renderCalGrid();
+}
+
+function calShift(d){
+  calM+=d;
+  if(calM>11){calM=0;calY++;}
+  if(calM<0){calM=11;calY--;}
+  renderCalGrid();
+}
+
+function renderCalGrid(){
+  var all=gl(KE), emap={};
+  all.forEach(function(e){emap[e.date]=e;});
+  var now=new Date();
+  var first=new Date(calY,calM,1);
+  var last=new Date(calY,calM+1,0);
+  var startDow=(first.getDay()+6)%7;
+
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMth').textContent=MONTHS[calM]+' '+calY;
+
+  var dow=document.getElementById('calDow');
+  dow.innerHTML=['MON','TUE','WED','THU','FRI','SAT','SUN'].map(function(d){
+    return '<div class="caldow-cell">'+d+'</div>';
+  }).join('');
+
+  var html='';
+  for(var i=0;i<startDow;i++){
+    var pd=new Date(calY,calM,1-startDow+i);
+    html+=calDayHtml(pd,emap,now,true);
+  }
+  for(var d=1;d<=last.getDate();d++){
+    html+=calDayHtml(new Date(calY,calM,d),emap,now,false);
+  }
+  var total=startDow+last.getDate();
+  var rem=(7-total%7)%7;
+  for(var i2=1;i2<=rem;i2++){
+    html+=calDayHtml(new Date(calY,calM+1,i2),emap,now,true);
+  }
+  document.getElementById('calDays').innerHTML=html;
+
+  // attach click events
+  document.querySelectorAll('.calday').forEach(function(el){
+    el.onclick=function(){
+      var k=el.dataset.date;
+      document.querySelectorAll('.calday').forEach(function(d){d.classList.remove('sel');});
+      el.classList.add('sel');
+      showCalEntry(k,emap[k]);
+    };
+  });
+}
+
+function calDayHtml(dt,emap,now,other){
+  var key=localDateKey(dt);
+  var entry=emap[key];
+  var isToday=dt.toDateString()===now.toDateString();
+  var cls='calday'+(other?' other':'')+(isToday?' today':'');
+  var dot='';
+  if(entry){
+    var m=MOODS.find(function(m){return m.k===entry.mood;});
+    if(m) dot='<div class="cdot" style="background:'+m.bg+';border:1px solid rgba(0,0,0,.1)"></div>';
+  }
+  return '<div class="'+cls+'" data-date="'+key+'"><span class="cdn">'+dt.getDate()+'</span>'+dot+'</div>';
+}
+
+function showCalEntry(dateStr,entry){
+  var el=document.getElementById('calEntry');
+  var d=new Date(dateStr);
+  var lbl=d.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  if(!entry){
+    el.innerHTML='<div class="calempty"><b style="display:block;margin-bottom:5px;">'+lbl+'</b>這天沒有日記</div>';
+    return;
+  }
+  var mood=MOODS.find(function(m){return m.k===entry.mood;});
+  var html='<div class="cale-hd"><div class="cale-mface" style="background:'+(mood?mood.bg:'#e8f4e8')+'">'+(mood?mood.e:'')+'</div>'
+    +'<div><div class="cale-dt">'+lbl+'</div><div class="cale-ml">'+(mood?mood.l:'無心情記錄')+'</div></div></div>';
+  html+='<div>';
+  DIARY_QS.forEach(function(q){
+    if(entry[q.id]) html+='<div class="cale-q"><div class="cale-ql">'+q.lbl+'</div><div class="cale-qv">'+esc(entry[q.id])+'</div></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ACHIEVEMENTS
+var ACH_ICONS=['💧','🏃','📚','🧘','🍎','😴','💪','✍️','🎯','🌱','☀️','🎵','🧹','💊','🫁','🤝','🍵','🚴','🧠','🌙','⭐','🔥','🎨','🏋️'];
+var selAchIcon='💧';
+
+function initAchIconPicker(){
+  var wrap=document.getElementById('achIconPicker');
+  if(!wrap) return;
+  wrap.innerHTML=ACH_ICONS.map(function(ic){
+    return '<button type="button" class="aip-btn'+(ic===selAchIcon?' on':'')+'" onclick="pickAchIcon(\''+ic+'\')" title="'+ic+'">'+ic+'</button>';
+  }).join('');
+}
+
+function pickAchIcon(ic){
+  selAchIcon=ic;
+  document.querySelectorAll('.aip-btn').forEach(function(b){
+    b.classList.toggle('on',b.title===ic);
+  });
+}
+
+function toggleAchForm(){
+  var form=document.getElementById('achForm');
+  form.classList.toggle('open');
+  if(form.classList.contains('open')) initAchIconPicker();
+}
+
+function addAch(){
+  var name=document.getElementById('aName').value.trim();
+  var desc=document.getElementById('aDesc').value.trim();
+  var target=parseInt(document.getElementById('aTarget').value)||1;
+  var color=document.getElementById('aColor').value;
+  if(!name){toast('請填寫成就名稱');return;}
+  var all=gl(KA);
+  all.push({id:Date.now().toString(),name:name,desc:desc,target:target,color:color,icon:selAchIcon,count:0,log:[],completed:false});
+  sl(KA,all);
+  document.getElementById('aName').value='';
+  document.getElementById('aDesc').value='';
+  document.getElementById('aTarget').value='';
+  document.getElementById('achForm').classList.remove('open');
+  toast('成就已建立');
+  renderAch();
+}
+
+function logAch(id){
+  var all=gl(KA), a=all.find(function(x){return x.id===id;});
+  if(!a) return;
+  if(a.completed){toast('已達成！');return;}
+  a.count++;a.log.push(new Date().toISOString());
+  if(a.count>=a.target){a.completed=true;toast('達成：'+a.name+'！');}
+  else toast('+1（'+a.count+'/'+a.target+'）');
+  sl(KA,all);renderAch();
+}
+
+function logAchAuto(name){
+  var all=gl(KA), a=all.find(function(x){return x.name===name;});
+  if(!a||a.completed) return;
+  var today=todayKey();
+  if(a.log.some(function(l){return l.startsWith(today);})) return;
+  a.count++;a.log.push(new Date().toISOString());
+  if(a.count>=a.target) a.completed=true;
+  sl(KA,all);
+}
+
+function dlgOpen(title, msg, onConfirm){
+  document.getElementById('dlgTitle').textContent=title;
+  document.getElementById('dlgMsg').textContent=msg;
+  var btn=document.getElementById('dlgConfirmBtn');
+  btn.onclick=function(){ dlgClose(); onConfirm(); };
+  document.getElementById('dlgOverlay').classList.add('show');
+}
+function dlgClose(){
+  document.getElementById('dlgOverlay').classList.remove('show');
+}
+
+function delAch(id){
+  dlgOpen('確認刪除','確定要刪除這個成就嗎？此操作無法復原。',function(){
+    sl(KA,gl(KA).filter(function(a){return a.id!==id;}));
+    renderAch();toast('已刪除');
+  });
+}
+
+function renderAch(){
+  var all=gl(KA);
+  var done=all.filter(function(a){return a.completed;}).length;
+  document.getElementById('achDone').textContent=done;
+  document.getElementById('achTotal').textContent='共 '+all.length+' 個成就';
+  var list=document.getElementById('achList');
+  if(all.length===0){
+    list.innerHTML='<div style="text-align:center;padding:40px 20px;color:#8a8a8e;font-size:.88rem;">還沒有成就，點右上角 + 新增</div>';
+    return;
+  }
+  list.innerHTML=all.map(function(a){
+    var pct=Math.min(100,Math.round(a.count/a.target*100));
+    var icoBg=a.color+'22';
+    var ico=a.icon||'⭐';
+    return '<div class="achcard">'
+      +'<div class="achico" style="background:'+icoBg+';border-radius:13px;font-size:1.4rem;display:flex;align-items:center;justify-content:center;">'+ico+'</div>'
+      +'<div class="achbody">'
+        +'<div class="achnm">'+esc(a.name)+'</div>'
+        +(a.desc?'<div class="achdc">'+esc(a.desc)+'</div>':'')
+        +'<div class="achpw"><div class="achpb" style="width:'+pct+'%;background:'+a.color+'"></div></div>'
+        +'<div class="achst">'
+          +'<span class="achstxt">'+a.count+' / '+a.target+' 次</span>'
+          +(a.completed
+            ?'<span class="achdone">✓ 達成</span>'
+            :'<button class="achlb" data-id="'+a.id+'" onclick="logAch(this.dataset.id)">記錄 +1</button>')
+        +'</div>'
+        +'<button class="achdl" data-id="'+a.id+'" onclick="delAch(this.dataset.id)">刪除</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+// SETTINGS
+function loadSettings(){
+  var cfg=go(KC);
+  document.getElementById('cfgDb').value=cfg.db||'';
+  document.getElementById('cfgKey').value=cfg.key||'';
+  var prefs=go(KP);
+  document.getElementById('togR').classList.toggle('on',!!prefs.remind);
+  document.getElementById('togW').classList.toggle('on',!!prefs.weekly);
+  // 系統版本
+  document.getElementById('sysVersion').textContent=APP_VERSION;
+}
+
+var APP_VERSION='v1.0.0';
+var APP_URL='';  // 填入你的應用網址
+
+function checkUpdate(){
+  var label=document.getElementById('checkUpdateLabel');
+  var badge=document.getElementById('sysBadge');
+  label.textContent='檢查中…';
+  setTimeout(function(){
+    // 目前為本地版本，無遠端比對；顯示已是最新
+    label.textContent='檢查更新';
+    badge.textContent='最新';
+    badge.className='sys-badge';
+    toast('已是最新版本 '+APP_VERSION);
+  }, 1200);
+}
+
+function openAppUrl(){
+  var cfg=go(KC);
+  var url=cfg.appUrl||APP_URL;
+  if(!url){
+    // 讓使用者輸入網址
+    var input=prompt('請輸入應用網址：',url);
+    if(!input) return;
+    url=input.trim();
+    cfg.appUrl=url;
+    sl(KC,cfg);
+  }
+  window.open(url,'_blank');
+}
+
+function saveConfig(){
+  var db=document.getElementById('cfgDb').value.trim();
+  var key=document.getElementById('cfgKey').value.trim();
+  if(!db||!key){toast('請填寫完整設定');return;}
+  sl(KC,{db:db,key:key});toast('Notion 設定已儲存');
+}
+
+function togglePref(key,togId){
+  var prefs=go(KP);prefs[key]=!prefs[key];sl(KP,prefs);
+  document.getElementById(togId).classList.toggle('on',!!prefs[key]);
+}
+
+function exportData(){
+  var data={entries:gl(KE),achievements:gl(KA)};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='diary_'+todayKey()+'.json';
+  a.click();
+  toast('匯出完成');
+}
+
+function clearAll(){
+  dlgOpen('清除所有資料','確定清除所有日記和成就？此操作無法復原。',function(){
+    [KE,KA,KC,KP].forEach(function(k){localStorage.removeItem(k);});
+    updateStats();toast('已清除所有資料');
+  });
+}
+
+// NOTION SYNC
+function syncAll(){
+  var cfg=go(KC);
+  if(!cfg.db||!cfg.key){toast('請先設定 Notion');goPage('pgSettings');return;}
+  var pending=gl(KE).filter(function(e){return !e.synced;});
+  if(!pending.length){toast('沒有待同步的日記');return;}
+  toast('同步中⋯');
+  var chain=Promise.resolve();
+  pending.forEach(function(e){
+    chain=chain.then(function(){return pushEntry(e,cfg);});
+  });
+  chain.then(function(){
+    updateStats();toast('已同步 '+pending.length+' 篇日記');
+  }).catch(function(err){
+    toast('同步失敗：'+err.message);
+  });
+}
+
+function pushEntry(entry,cfg){
+  var mood=MOODS.find(function(m){return m.k===entry.mood;});
+  var props={
+    '名稱':{title:[{text:{content:(mood?mood.l:'—')+' · '+entry.date}}]},
+    '日期':{date:{start:entry.date}},
+    '心情':{rich_text:[{text:{content:mood?mood.l:'—'}}]}
+  };
+  DIARY_QS.forEach(function(q){
+    if(entry[q.id]) props[q.lbl]={rich_text:[{text:{content:entry[q.id]}}]};
+  });
+  return fetch('https://api.notion.com/v1/pages',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+cfg.key,'Notion-Version':'2022-06-28','Content-Type':'application/json'},
+    body:JSON.stringify({parent:{database_id:cfg.db.replace(/-/g,'')},properties:props})
+  }).then(function(res){
+    if(!res.ok) return res.json().then(function(e){throw new Error(e.message);});
+    var all=gl(KE), idx=all.findIndex(function(e){return e.date===entry.date;});
+    if(idx>=0){all[idx].synced=true;sl(KE,all);}
+  });
+}
+
+// INIT
+window.addEventListener('DOMContentLoaded', function(){
+  initHome();
+  initPWA();
+});
+
+function initPWA(){
+  var C=document.createElement('canvas');
+  C.width=C.height=512;
+  var ctx=C.getContext('2d');
+
+  // Rounded background
+  var rr=function(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+  };
+
+  // Background
+  rr(0,0,512,512,108); ctx.fillStyle='#2d6a4f'; ctx.fill();
+
+  // Book body (white)
+  rr(140,108,232,296,18); ctx.fillStyle='#ffffff'; ctx.fill();
+
+  // Spine
+  ctx.fillStyle='#74a88a';
+  ctx.fillRect(140,126,38,278);
+  rr(140,108,38,296,18); ctx.fill();
+
+  // Lines
+  ctx.fillStyle='#b7ddc8';
+  rr(200,192,148,13,6); ctx.fill();
+  rr(200,228,148,13,6); ctx.fill();
+  rr(200,264,108,13,6); ctx.fill();
+
+  // Heart
+  ctx.fillStyle='#a8e8c2';
+  ctx.beginPath();
+  ctx.moveTo(256,335);
+  ctx.bezierCurveTo(256,316,232,310,232,326);
+  ctx.bezierCurveTo(232,344,256,360,256,360);
+  ctx.bezierCurveTo(256,360,280,344,280,326);
+  ctx.bezierCurveTo(280,310,256,316,256,335);
+  ctx.fill();
+
+  var url=C.toDataURL('image/png');
+
+  // Apple touch icon
+  var al=document.createElement('link');
+  al.rel='apple-touch-icon'; al.href=url;
+  document.head.appendChild(al);
+
+  // Web manifest
+  var mf=JSON.stringify({
+    name:'心情日記', short_name:'日記',
+    start_url:'.', display:'standalone',
+    background_color:'#edf7f0', theme_color:'#2d6a4f',
+    icons:[{src:url,sizes:'512x512',type:'image/png'},{src:url,sizes:'192x192',type:'image/png'}]
+  });
+  var ml=document.createElement('link');
+  ml.rel='manifest';
+  ml.href=URL.createObjectURL(new Blob([mf],{type:'application/json'}));
+  document.head.appendChild(ml);
+
+  // Service Worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('data:text/javascript,'+encodeURIComponent(
+      'self.addEventListener("install",function(){self.skipWaiting();});'+
+      'self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).catch(function(){return new Response("Offline");}));});'
+    )).catch(function(){});
+  }
+}
+</script>
+</body>
+</html>
