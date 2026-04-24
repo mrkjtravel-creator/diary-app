@@ -378,6 +378,7 @@ select.fi{appearance:none;}
     </div>
     <div class="setsecttitle">資料</div>
     <div class="setcard">
+      <button class="setab" onclick="testConn()">測試 Notion 連線</button>
       <button class="setab" onclick="syncAll()">同步全部日記到 Notion</button>
       <button class="setab" onclick="exportData()">匯出全部日記（JSON）</button>
       <button class="setab danger" onclick="clearAll()">清除全部資料</button>
@@ -538,10 +539,11 @@ function localDateKey(d){
 function todayKey(){return localDateKey(new Date());}
 function esc(s){return (s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];});}
 
-function toast(msg){
+function toast(msg,dur){
   var el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
-  setTimeout(function(){el.classList.remove('show');},2800);
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.classList.remove('show');},dur||2800);
 }
 
 function goPage(pid){
@@ -663,8 +665,10 @@ function saveAndSync(){
       pushEntry(entry,cfg).then(function(){
         updateStats();
         toast('已儲存並同步到 Notion');
-      }).catch(function(){
-        toast('已儲存，同步稍後再試');
+      }).catch(function(err){
+        var msg=err&&err.message?err.message:'網路錯誤';
+        toast('同步失敗：'+msg,5000);
+        console.error('[sync]',err);
       });
     }
   } else {
@@ -893,7 +897,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.1.7';
+var APP_VERSION='v1.1.8';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -966,6 +970,22 @@ function clearAll(){
 }
 
 // NOTION SYNC
+function testConn(){
+  var cfg=go(KC);
+  if(!cfg.db||!cfg.key){toast('請先填寫 Database ID 和 API Key');return;}
+  toast('測試中…');
+  var BASE='https://notion-proxy.mrkj-travel.workers.dev';
+  var hdrs={'Authorization':'Bearer '+cfg.key,'Notion-Version':'2022-06-28','Content-Type':'application/json'};
+  var dbId=cfg.db.replace(/-/g,'');
+  fetch(BASE+'/v1/databases/'+dbId,{method:'GET',headers:hdrs})
+    .then(function(r){return r.json().then(function(body){return {ok:r.ok,status:r.status,body:body};});})
+    .then(function(d){
+      if(d.ok) toast('連線成功！資料庫：'+((d.body.title&&d.body.title[0]&&d.body.title[0].plain_text)||dbId),5000);
+      else toast('連線失敗 '+d.status+'：'+(d.body.message||JSON.stringify(d.body)),6000);
+    })
+    .catch(function(err){toast('無法連到 proxy：'+err.message,6000);});
+}
+
 function syncAll(){
   var cfg=go(KC);
   if(!cfg.db||!cfg.key){toast('請先設定 Notion');goPage('pgSettings');return;}
@@ -979,7 +999,9 @@ function syncAll(){
   chain.then(function(){
     updateStats();toast('已同步 '+pending.length+' 篇日記');
   }).catch(function(err){
-    toast('同步失敗：'+err.message);
+    var msg=err&&err.message?err.message:'網路錯誤';
+    toast('同步失敗：'+msg,5000);
+    console.error('[syncAll]',err);
   });
 }
 
@@ -1012,7 +1034,9 @@ function pushEntry(entry,cfg){
       return fetch(BASE+'/v1/pages',{method:'POST',headers:hdrs,body:JSON.stringify({parent:{database_id:dbId},properties:props})});
     }
   }).then(function(res){
-    if(!res.ok) return res.json().then(function(e){throw new Error(e.message);});
+    if(!res.ok) return res.json().then(function(e){
+      throw new Error((e.message||JSON.stringify(e))+' (HTTP '+res.status+')');
+    });
     var all=gl(KE), idx=all.findIndex(function(e){return e.date===entry.date;});
     if(idx>=0){all[idx].synced=true;sl(KE,all);}
   });
