@@ -897,7 +897,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.1.9';
+var APP_VERSION='v1.2.0';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -977,11 +977,17 @@ function testConn(){
   var BASE='https://notion-proxy.mrkj-travel.workers.dev';
   var hdrs={'Authorization':'Bearer '+cfg.key,'Notion-Version':'2022-06-28','Content-Type':'application/json'};
   var dbId=cfg.db.replace(/-/g,'');
+  // 清除 schema 快取，強制重新讀取
+  localStorage.removeItem(KS);
   fetch(BASE+'/v1/databases/'+dbId,{method:'GET',headers:hdrs})
     .then(function(r){return r.json().then(function(body){return {ok:r.ok,status:r.status,body:body};});})
     .then(function(d){
-      if(d.ok) toast('連線成功！資料庫：'+((d.body.title&&d.body.title[0]&&d.body.title[0].plain_text)||dbId),5000);
-      else toast('連線失敗 '+d.status+'：'+(d.body.message||JSON.stringify(d.body)),6000);
+      if(!d.ok){toast('連線失敗 '+d.status+'：'+(d.body.message||JSON.stringify(d.body)),6000);return;}
+      var existing=d.body.properties?Object.keys(d.body.properties):[];
+      var missing=DIARY_QS.map(function(q){return q.lbl;}).filter(function(l){return existing.indexOf(l)<0;});
+      var name=(d.body.title&&d.body.title[0]&&d.body.title[0].plain_text)||dbId;
+      if(missing.length===0) toast('連線成功！「'+name+'」所有欄位已就緒',5000);
+      else toast('連線成功！將自動新增欄位：'+missing.join('、'),6000);
     })
     .catch(function(err){toast('無法連到 proxy：'+err.message,6000);});
 }
@@ -1012,9 +1018,26 @@ function fetchSchema(BASE,hdrs,dbId){
   return fetch(BASE+'/v1/databases/'+dbId,{method:'GET',headers:hdrs})
     .then(function(r){return r.json();})
     .then(function(d){
-      var props=d.properties?Object.keys(d.properties):null;
-      if(props) sl(KS,{id:dbId,props:props,ts:Date.now()});
-      return props;
+      var existing=d.properties?Object.keys(d.properties):[];
+      // 找出 App 有但 Notion 還沒有的欄位
+      var needed=DIARY_QS.map(function(q){return q.lbl;})
+        .filter(function(lbl){return existing.indexOf(lbl)<0;});
+      if(needed.length===0){
+        sl(KS,{id:dbId,props:existing,ts:Date.now()});
+        return existing;
+      }
+      // 自動在 Notion 資料庫新增缺少的欄位（Text 類型）
+      var newProps={};
+      needed.forEach(function(lbl){newProps[lbl]={rich_text:{}};});
+      return fetch(BASE+'/v1/databases/'+dbId,{
+        method:'PATCH',headers:hdrs,
+        body:JSON.stringify({properties:newProps})
+      }).then(function(r){return r.json();})
+        .then(function(updated){
+          var all=updated.properties?Object.keys(updated.properties):existing.concat(needed);
+          sl(KS,{id:dbId,props:all,ts:Date.now()});
+          return all;
+        });
     });
 }
 
