@@ -94,6 +94,18 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#c8e8d4;overfl
 .wqn{width:17px;height:17px;background:var(--g2);color:var(--dark);border-radius:5px;font-size:.62rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
 .wq textarea{width:100%;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--dark);resize:none;min-height:50px;background:transparent;line-height:1.6;}
 .wq textarea::placeholder{color:var(--g2);}
+.acts-list{margin-bottom:6px;}
+.act-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #eaf5ea;}
+.act-item:last-child{border-bottom:none;}
+.act-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.act-txt{flex:1;font-size:.88rem;color:var(--dark);line-height:1.4;}
+.act-del{background:none;border:none;color:var(--g2);cursor:pointer;font-size:1rem;padding:0 2px;line-height:1;transition:color .15s;}
+.act-del:active{color:var(--red);}
+.acts-input-row{display:flex;gap:8px;align-items:center;}
+.acts-input{flex:1;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--dark);background:transparent;line-height:1.6;}
+.acts-input::placeholder{color:var(--g2);}
+.acts-add{width:26px;height:26px;border-radius:50%;background:var(--dark);color:#fff;border:none;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s;}
+.acts-add:active{transform:scale(.9);}
 .wsave{padding:18px 20px 0;}
 .btnm{width:100%;padding:16px;border:none;border-radius:13px;background:var(--dark);color:#fff;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:transform .15s;}
 .btnm:active{transform:scale(.97);}
@@ -473,6 +485,7 @@ var MOODS=[
 var DIARY_QS=[
   {id:'dq1', lbl:'今天最簡單的一句話描述', ph:'今天是⋯⋯的一天'},
   {id:'dq2', lbl:'今天重要或難忘的一件事', ph:'今天最讓我印象深刻的是⋯⋯'},
+  {id:'dq_acts', lbl:'今天做什麼事情呢？', ph:'加一件小事…', type:'list'},
   {id:'dq3', lbl:'最感謝的事情', ph:'我很感謝⋯⋯'},
   {id:'dq4', lbl:'最難過的事情', ph:'今天讓我難過的是⋯⋯'},
   {id:'dq5', lbl:'我打算怎麼面對', ph:'我可以⋯⋯'},
@@ -481,6 +494,37 @@ var DIARY_QS=[
 ];
 
 var curMood='', calY, calM;
+var _actsList={};
+
+function renderActsList(qid){
+  var items=_actsList[qid]||[];
+  var el=document.getElementById(qid+'_list');
+  if(!el) return;
+  el.innerHTML=items.length===0?'':items.map(function(txt,idx){
+    return '<div class="act-item">'
+      +'<span class="act-dot"></span>'
+      +'<span class="act-txt">'+esc(txt)+'</span>'
+      +'<button class="act-del" onclick="delActItem(\''+qid+'\','+idx+')">×</button>'
+      +'</div>';
+  }).join('');
+}
+
+function addActItem(qid){
+  var inp=document.getElementById(qid+'_inp');
+  var val=inp?inp.value.trim():'';
+  if(!val) return;
+  if(!_actsList[qid]) _actsList[qid]=[];
+  _actsList[qid].push(val);
+  inp.value='';
+  inp.focus();
+  renderActsList(qid);
+}
+
+function delActItem(qid,idx){
+  if(!_actsList[qid]) return;
+  _actsList[qid].splice(idx,1);
+  renderActsList(qid);
+}
 
 function gl(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
 function go(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch(e){return{};}}
@@ -527,6 +571,17 @@ function initHome(){
   // write fields
   var wf=document.getElementById('wfields');
   wf.innerHTML=DIARY_QS.map(function(q,i){
+    if(q.type==='list'){
+      return '<div class="wq">'
+        +'<div class="wqlbl"><span class="wqn">'+(i+1)+'</span>'+q.lbl+'</div>'
+        +'<div class="acts-list" id="'+q.id+'_list"></div>'
+        +'<div class="acts-input-row">'
+          +'<input class="acts-input" id="'+q.id+'_inp" type="text" placeholder="'+q.ph+'" '
+            +'onkeydown="if(event.key===\'Enter\'){addActItem(\''+q.id+'\');event.preventDefault();}">'
+          +'<button class="acts-add" onclick="addActItem(\''+q.id+'\')">＋</button>'
+        +'</div>'
+        +'</div>';
+    }
     return '<div class="wq">'
       +'<div class="wqlbl"><span class="wqn">'+(i+1)+'</span>'+q.lbl+'</div>'
       +'<textarea id="'+q.id+'" placeholder="'+q.ph+'" rows="2"></textarea>'
@@ -564,8 +619,13 @@ function restoreDraft(){
   var all=gl(KE), ex=all.find(function(e){return e.date===todayKey();});
   if(!ex) return;
   DIARY_QS.forEach(function(q){
-    var el=document.getElementById(q.id);
-    if(el) el.value=ex[q.id]||'';
+    if(q.type==='list'){
+      try{_actsList[q.id]=JSON.parse(ex[q.id]||'[]');}catch(e){_actsList[q.id]=[];}
+      renderActsList(q.id);
+    } else {
+      var el=document.getElementById(q.id);
+      if(el) el.value=ex[q.id]||'';
+    }
   });
   if(ex.mood) selMood(ex.mood);
 }
@@ -581,8 +641,12 @@ function saveAndSync(){
   var today=todayKey();
   var data={date:today,mood:curMood,saved:new Date().toISOString(),synced:false};
   DIARY_QS.forEach(function(q){
-    var el=document.getElementById(q.id);
-    data[q.id]=el?el.value.trim():'';
+    if(q.type==='list'){
+      data[q.id]=JSON.stringify(_actsList[q.id]||[]);
+    } else {
+      var el=document.getElementById(q.id);
+      data[q.id]=el?el.value.trim():'';
+    }
   });
   var all=gl(KE), idx=all.findIndex(function(e){return e.date===today;});
   if(idx>=0) all[idx]=Object.assign(all[idx],data);
@@ -692,7 +756,15 @@ function showCalEntry(dateStr,entry){
     +'<div><div class="cale-dt">'+lbl+'</div><div class="cale-ml">'+(mood?mood.l:'無心情記錄')+'</div></div></div>';
   html+='<div>';
   DIARY_QS.forEach(function(q){
-    if(entry[q.id]) html+='<div class="cale-q"><div class="cale-ql">'+q.lbl+'</div><div class="cale-qv">'+esc(entry[q.id])+'</div></div>';
+    if(q.type==='list'){
+      var items=[];try{items=JSON.parse(entry[q.id]||'[]');}catch(e){}
+      if(items.length>0){
+        html+='<div class="cale-q"><div class="cale-ql">'+q.lbl+'</div>'
+          +'<div class="cale-qv">'+items.map(function(t){return '· '+esc(t);}).join('<br>')+'</div></div>';
+      }
+    } else if(entry[q.id]){
+      html+='<div class="cale-q"><div class="cale-ql">'+q.lbl+'</div><div class="cale-qv">'+esc(entry[q.id])+'</div></div>';
+    }
   });
   html+='</div>';
   el.innerHTML=html;
@@ -821,7 +893,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.1.1';
+var APP_VERSION='v1.1.7';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -919,7 +991,12 @@ function pushEntry(entry,cfg){
     '心情':{rich_text:[{text:{content:mood?mood.l:'—'}}]}
   };
   DIARY_QS.forEach(function(q){
-    if(entry[q.id]) props[q.lbl]={rich_text:[{text:{content:entry[q.id]}}]};
+    var val=entry[q.id];
+    if(q.type==='list'){
+      var items=[];try{items=JSON.parse(val||'[]');}catch(e){}
+      val=items.join('\n');
+    }
+    if(val) props[q.lbl]={rich_text:[{text:{content:val}}]};
   });
   var BASE='https://notion-proxy.mrkj-travel.workers.dev';
   var hdrs={'Authorization':'Bearer '+cfg.key,'Notion-Version':'2022-06-28','Content-Type':'application/json'};
