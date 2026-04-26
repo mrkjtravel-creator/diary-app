@@ -362,7 +362,7 @@ select.fi{appearance:none;}
     <div class="setsecttitle">Notion 後台</div>
     <div class="setcard">
       <div class="notwrap"><div class="notlbl">Database ID</div><input class="noti" type="text" id="cfgDb" placeholder="從 Notion URL 複製"></div>
-      <div class="notwrap"><div class="notlbl">API Key</div><input class="noti" type="text" id="cfgKey" placeholder="secret_..."></div>
+      <div class="notwrap"><div class="notlbl">API Key</div><input class="noti" type="password" id="cfgKey" placeholder="secret_..." autocomplete="current-password"></div>
       <button class="notsave" onclick="saveConfig()">儲存 Notion 設定</button>
     </div>
     <div class="setsecttitle">偏好</div>
@@ -473,6 +473,9 @@ select.fi{appearance:none;}
 
 <script>
 var KE='dj_e3', KA='dj_a2', KC='dj_c1', KP='dj_p1', KS='dj_s1';
+var PROXY_BASE='https://notion-proxy.mrkj-travel.workers.dev';
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 var MOODS=[
   {k:'happy',  l:'開心', e:'😊', bg:'#fff8e1'},
@@ -599,8 +602,6 @@ function updateStats(){
 
   // today's date in English
   var now=new Date();
-  var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('streakVal').textContent=now.getDate()+' '+MONTHS[now.getMonth()];
   document.getElementById('dateDayLabel').textContent=DAYS[now.getDay()];
   document.getElementById('dateYear').textContent=now.getFullYear();
@@ -676,8 +677,6 @@ function saveAndSync(){
   }
 }
 
-function saveEntry(){saveAndSync();}
-
 // CALENDAR
 function renderCal(){
   var now=new Date();
@@ -700,7 +699,6 @@ function renderCalGrid(){
   var last=new Date(calY,calM+1,0);
   var startDow=(first.getDay()+6)%7;
 
-  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('calMth').textContent=MONTHS[calM]+' '+calY;
 
   var dow=document.getElementById('calDow');
@@ -721,17 +719,16 @@ function renderCalGrid(){
   for(var i2=1;i2<=rem;i2++){
     html+=calDayHtml(new Date(calY,calM+1,i2),emap,now,true);
   }
-  document.getElementById('calDays').innerHTML=html;
-
-  // attach click events
-  document.querySelectorAll('.calday').forEach(function(el){
-    el.onclick=function(){
-      var k=el.dataset.date;
-      document.querySelectorAll('.calday').forEach(function(d){d.classList.remove('sel');});
-      el.classList.add('sel');
-      showCalEntry(k,emap[k]);
-    };
-  });
+  var calDaysEl=document.getElementById('calDays');
+  calDaysEl.innerHTML=html;
+  calDaysEl.onclick=function(e){
+    var cell=e.target.closest('.calday');
+    if(!cell) return;
+    var k=cell.dataset.date;
+    calDaysEl.querySelectorAll('.calday').forEach(function(d){d.classList.remove('sel');});
+    cell.classList.add('sel');
+    showCalEntry(k,emap[k]);
+  };
 }
 
 function calDayHtml(dt,emap,now,other){
@@ -897,7 +894,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.2.0';
+var APP_VERSION='v1.2.1';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -974,12 +971,11 @@ function testConn(){
   var cfg=go(KC);
   if(!cfg.db||!cfg.key){toast('請先填寫 Database ID 和 API Key');return;}
   toast('測試中…');
-  var BASE='https://notion-proxy.mrkj-travel.workers.dev';
   var hdrs={'Authorization':'Bearer '+cfg.key,'Notion-Version':'2022-06-28','Content-Type':'application/json'};
   var dbId=cfg.db.replace(/-/g,'');
   // 清除 schema 快取，強制重新讀取
   localStorage.removeItem(KS);
-  fetch(BASE+'/v1/databases/'+dbId,{method:'GET',headers:hdrs})
+  fetch(PROXY_BASE+'/v1/databases/'+dbId,{method:'GET',headers:hdrs})
     .then(function(r){return r.json().then(function(body){return {ok:r.ok,status:r.status,body:body};});})
     .then(function(d){
       if(!d.ok){toast('連線失敗 '+d.status+'：'+(d.body.message||JSON.stringify(d.body)),6000);return;}
@@ -1066,20 +1062,19 @@ function buildProps(entry,validProps){
 }
 
 function pushEntry(entry,cfg){
-  var BASE='https://notion-proxy.mrkj-travel.workers.dev';
   var hdrs={'Authorization':'Bearer '+cfg.key,'Notion-Version':'2022-06-28','Content-Type':'application/json'};
   var dbId=cfg.db.replace(/-/g,'');
-  return fetchSchema(BASE,hdrs,dbId).then(function(validProps){
+  return fetchSchema(PROXY_BASE,hdrs,dbId).then(function(validProps){
     var props=buildProps(entry,validProps);
-    return fetch(BASE+'/v1/databases/'+dbId+'/query',{
+    return fetch(PROXY_BASE+'/v1/databases/'+dbId+'/query',{
       method:'POST',headers:hdrs,
       body:JSON.stringify({filter:{property:'日期',date:{equals:entry.date}},page_size:1})
     }).then(function(r){return r.json();}).then(function(data){
       var existing=data.results&&data.results[0];
       if(existing){
-        return fetch(BASE+'/v1/pages/'+existing.id,{method:'PATCH',headers:hdrs,body:JSON.stringify({properties:props})});
+        return fetch(PROXY_BASE+'/v1/pages/'+existing.id,{method:'PATCH',headers:hdrs,body:JSON.stringify({properties:props})});
       } else {
-        return fetch(BASE+'/v1/pages',{method:'POST',headers:hdrs,body:JSON.stringify({parent:{database_id:dbId},properties:props})});
+        return fetch(PROXY_BASE+'/v1/pages',{method:'POST',headers:hdrs,body:JSON.stringify({parent:{database_id:dbId},properties:props})});
       }
     }).then(function(res){
       if(!res.ok) return res.json().then(function(e){
@@ -1158,10 +1153,8 @@ function installApp(){
 }
 
 function showInstallDone(){
-  ['installDone'].forEach(function(id){
-    var el = document.getElementById(id);
-    if(el) el.style.display = '';
-  });
+  var done=document.getElementById('installDone');
+  if(done) done.style.display='';
   ['installAndroidPrompt','installAndroid','installIos','installFallback'].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.style.display = 'none';
@@ -1208,16 +1201,11 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 
 function initPWA(){
-  // Apple touch icon
-  var al=document.createElement('link');
-  al.rel='apple-touch-icon'; al.href='icon-192.png';
-  document.head.appendChild(al);
-
   // Service Worker
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').then(function(reg){
       reg.update();
-    }).catch(function(){});
+    }).catch(function(err){console.warn('[SW]',err);});
     var _swRefreshing=false;
     navigator.serviceWorker.addEventListener('controllerchange',function(){
       if(!_swRefreshing){ _swRefreshing=true; window.location.reload(); }
