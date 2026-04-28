@@ -380,6 +380,7 @@ select.fi{appearance:none;}
     <div class="setcard">
       <button class="setab" onclick="testConn()">測試 Notion 連線</button>
       <button class="setab" onclick="syncAll()">同步全部日記到 Notion</button>
+      <button class="setab" onclick="importFromNotion()">從 Notion 匯入日記</button>
       <button class="setab" onclick="exportData()">匯出全部日記（JSON）</button>
       <button class="setab danger" onclick="clearAll()">清除全部資料</button>
     </div>
@@ -534,7 +535,7 @@ function gl(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){retu
 function go(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch(e){return{};}}
 function sl(k,v){localStorage.setItem(k,JSON.stringify(v));}
 // 預設 Notion 設定（若尚未設定則自動填入）
-(function(){var c=go(KC);if(!c.db||!c.key){sl(KC,{db:'34aebef1744e81c591def31741d1e050',key:'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'});}})();
+(function(){var c=go(KC);if(!c.db||!c.key){sl(KC,{db:'34aebef1744e81c591def31741d1e050',key:'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'});}})();
 function localDateKey(d){
   var y=d.getFullYear();
   var m=String(d.getMonth()+1).padStart(2,'0');
@@ -896,7 +897,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.2.1';
+var APP_VERSION='v1.2.3';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
@@ -1061,6 +1062,62 @@ function buildProps(entry,validProps){
     });
   }
   return props;
+}
+
+function getNotionText(prop){
+  if(!prop) return '';
+  if(prop.rich_text&&prop.rich_text[0]) return prop.rich_text[0].plain_text||'';
+  if(prop.title&&prop.title[0]) return prop.title[0].plain_text||'';
+  return '';
+}
+
+function importFromNotion(){
+  var cfg=go(KC);
+  if(!cfg.db||!cfg.key){toast('請先設定 Notion');return;}
+  toast('從 Notion 匯入中…');
+  var hdrs={'Authorization':'Bearer '+cfg.key,'Notion-Version':'2022-06-28','Content-Type':'application/json'};
+  var dbId=cfg.db.replace(/-/g,'');
+  var allPages=[];
+  function fetchPages(cursor){
+    var body={page_size:100};
+    if(cursor) body.start_cursor=cursor;
+    return fetch(PROXY_BASE+'/v1/databases/'+dbId+'/query',{
+      method:'POST',headers:hdrs,body:JSON.stringify(body)
+    }).then(function(r){return r.json();}).then(function(data){
+      allPages=allPages.concat(data.results||[]);
+      if(data.has_more&&data.next_cursor) return fetchPages(data.next_cursor);
+    });
+  }
+  fetchPages().then(function(){
+    var existing=gl(KE);
+    var imported=0;
+    allPages.forEach(function(page){
+      var props=page.properties||{};
+      var dateVal=props['日期']&&props['日期'].date&&props['日期'].date.start;
+      if(!dateVal) return;
+      if(existing.find(function(e){return e.date===dateVal;})) return;
+      var moodLabel=getNotionText(props['心情']);
+      var mood=MOODS.find(function(m){return m.l===moodLabel;});
+      var entry={date:dateVal,mood:mood?mood.k:'',synced:true};
+      DIARY_QS.forEach(function(q){
+        var val=getNotionText(props[q.lbl]);
+        if(q.type==='list'){
+          var items=val?val.split('\n').filter(function(s){return s.trim();}):[];
+          entry[q.id]=JSON.stringify(items);
+        } else {
+          entry[q.id]=val;
+        }
+      });
+      existing.push(entry);
+      imported++;
+    });
+    existing.sort(function(a,b){return b.date.localeCompare(a.date);});
+    sl(KE,existing);
+    updateStats();
+    toast(imported>0?'已匯入 '+imported+' 筆日記':'Notion 沒有新資料可匯入',4000);
+  }).catch(function(err){
+    toast('匯入失敗：'+(err.message||'網路錯誤'),5000);
+  });
 }
 
 function pushEntry(entry,cfg){
