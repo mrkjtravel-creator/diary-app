@@ -533,6 +533,8 @@ function delActItem(qid,idx){
 function gl(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
 function go(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch(e){return{};}}
 function sl(k,v){localStorage.setItem(k,JSON.stringify(v));}
+// 預設 Notion 設定（若尚未設定則自動填入）
+(function(){var c=go(KC);if(!c.db||!c.key){sl(KC,{db:'34aebef1744e81c591def31741d1e050',key:'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'});}})();
 function localDateKey(d){
   var y=d.getFullYear();
   var m=String(d.getMonth()+1).padStart(2,'0');
