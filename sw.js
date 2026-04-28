@@ -1,4 +1,4 @@
-var CACHE = 'diary-v1.2.3';
+var CACHE = 'diary-v1.2.4';
 
 self.addEventListener('install', function() {
   self.skipWaiting();
