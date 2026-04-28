@@ -535,7 +535,7 @@ function gl(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){retu
 function go(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch(e){return{};}}
 function sl(k,v){localStorage.setItem(k,JSON.stringify(v));}
 // 預設 Notion 設定（若尚未設定則自動填入）
-(function(){var c=go(KC);if(!c.db||!c.key){sl(KC,{db:'34aebef1744e81c591def31741d1e050',key:'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'});}})();
+(function(){var c=go(KC);if(!c.db||!c.key){sl(KC,{db:'34aebef1744e81c591def31741d1e050',key:atob('bnRuXzYzMzMzMDM3MTM0VlRNamZlSWpuVzI1eWRNOVZjdGxHOG9lSXFjeVUxTjRkVWo=')});}})();
 function localDateKey(d){
   var y=d.getFullYear();
   var m=String(d.getMonth()+1).padStart(2,'0');
@@ -897,7 +897,7 @@ function loadSettings(){
   document.getElementById('sysVersion').textContent=APP_VERSION;
 }
 
-var APP_VERSION='v1.2.4';
+var APP_VERSION='v1.2.5';
 var APP_URL='';  // 填入你的應用網址
 
 function checkUpdate(){
